@@ -20,9 +20,10 @@ class Kinematic {
   }
 
   void update() {
-    velocity.add(accelerate);
-    velocity.add(0, Kinematic.GRAVITY);
-    position.add(velocity);
+    float dt = 1/60;
+    velocity.add(PVector.mult(accelerate, dt));
+    velocity.y += Kinematic.GRAVITY*dt;
+    position.add(PVector.mult(velocity, dt));
   }
   
   Kinematic copy() {

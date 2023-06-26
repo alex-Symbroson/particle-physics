@@ -12,16 +12,32 @@ class Particle extends Kinematic {
   
   Particle prev, cur;
 
-  void display() {
-    if (coll-- > 0) stroke(255,0,0);
-    else stroke(0);
+  void display() { display(true); }
+  void display(boolean col) {
+    if(col)
+    {
+      if (coll-- > 0) stroke(255,0,0);
+      else stroke(0);
+    }
     ellipse(position.x, position.y, radius * 2, radius * 2);
+    
+    //stroke(200, 200, 255);
+    //ellipse(a.prev.position.x, a.prev.position.y, 2*a.radius, 2*a.radius);
+    if (col) stroke(0, 0, 255);
+    ellipse(position.x, position.y, 2, 2);
+    line(position.x, position.y, position.x + velocity.x/6, position.y + velocity.y/6);
   }
   
-  void update()
+  void update() { update(false); }
+  void update(boolean intense)
   {
     prev = copyRef(prev);
-    super.update();
+    if (SIMULATE) {
+      if (!intense) super.update();
+    } else {
+      prev.position.sub(velocity);
+      prev.velocity.sub(accelerate);
+    }
     cur = copyRef(cur);
   }
   
@@ -38,6 +54,29 @@ class Particle extends Kinematic {
     super.set(p);
     radius = p.radius;
     return this;
+  }
+  
+  @Override
+  public String toString() {
+      return String.format("Particle(%.3f, (%.3f, %.3f), (%.3f, %.3f))", 
+        radius, prev.position.x, prev.position.y, prev.velocity.x, prev.velocity.y);
+  }
+}
+
+class MouseParticle extends Particle {
+  MouseParticle(float radius) { super(radius); }
+  MouseParticle(float radius, PVector pos) { super(radius, pos); }
+  MouseParticle(float radius, PVector pos, PVector vel) { super(radius, pos, vel); }
+  
+  @Override
+  void update()
+  {
+    position.set(mouseX, mouseY);
+    prev = copyRef(prev);
+    cur = copyRef(cur);
+
+    prev.position.sub(velocity);
+    prev.velocity.sub(accelerate);
   }
 }
 
