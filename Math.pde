@@ -3,7 +3,7 @@ void reflect(Particle p, Line l) {
   Particle pp = p.cur;
   PVector prevPos = p.prev.position.copy();
   float dist2 = l.start.copy().sub(prevPos).dot(l.normal);
-  if(dist2 > 0) pp.radius = -pp.radius;
+  if (dist2 > 0) pp.radius = -pp.radius;
   dist2 += pp.radius;
   float dist1 = l.start.copy().sub(pp.position).dot(l.normal) + pp.radius;
   
@@ -25,35 +25,46 @@ boolean reflect(Particle a, Particle b) {
   
   // collision time
   float t = collisionTime(a.cur, b.cur);
-  if (t < -2)
+  if (t == 0) return false;
+  if (t < -4 * DT)
   {
     intense = true;
-    println(t);
     
-    Particle virt = a.copy();
-    virt.position.add(PVector.mult(a.velocity, t));
-    stroke(100, 200, 100);
-    a.cur.display(false);
-    stroke(200, 200, 200);
-    virt.display(false);
-  } else a.position.add(PVector.mult(a.velocity, t));
+    if (DBG_COLL) {
+      Particle virt = a.copy();
+      virt.position.add(PVector.mult(a.velocity, t));
+      stroke(T_GREEN);
+      a.cur.display(false);
+      stroke(T_LGREY);
+      virt.display(false);
+    }
+  } else if (SIMULATE) {
+    a.position.add(PVector.mult(a.velocity, t));
+  }
   
   PVector diff = PVector.sub(pb, pa);
   PVector normal = diff.copy().normalize();
-  PVector tang = new PVector(normal.y, -normal.x);
-  
+  PVector tang = vec(normal.y, -normal.x);
+
+  if (intense) {
+    float d_2 = -(diff.mag() - a.radius - b.radius) / 2;
+    a.position.sub(PVector.mult(normal, d_2));
+    b.position.add(PVector.mult(normal, d_2));
+    return true;
+  }
+
   float va_n = PVector.dot(va, normal);
   float vb_n = PVector.dot(vb, normal);
   float va_t = PVector.dot(va, tang);
   
   float v_new = (2*vb_n*b.mass + va_n*(a.mass - b.mass)) / (a.mass + b.mass);
-  a.velocity = PVector.mult(tang, va_t).add(PVector.mult(normal, v_new));
-  a.position.add(PVector.mult(a.velocity, -t));
-  if (intense)
+  if (SIMULATE && !intense) a.velocity = PVector.mult(tang, va_t).add(PVector.mult(normal, v_new));
+  if (SIMULATE && !intense) a.position.add(PVector.mult(a.velocity, -t));
+  if (intense && DBG_COLL)
   {
-    stroke(100, 100, 100);
+    stroke(T_GREY);
     a.prev.display(false);
-    stroke(100, 100, 200);
+    stroke(T_BLUE);
     a.display(false);
   }
   return intense;
@@ -82,7 +93,7 @@ float collisionTime(Particle p1, Particle p2) {
 void reflect2(Particle p, Line l) {
   Particle pp = p.cur;
   PVector direction = PVector.sub(l.end, l.start).normalize();
-  PVector normal = new PVector(direction.y, -direction.x);
+  PVector normal = vec(direction.y, -direction.x);
   PVector prev = PVector.sub(pp.position, pp.velocity);
   float dist1 = PVector.sub(pp.position, l.start).dot(normal);
   float dist2 = PVector.sub(prev, l.start).dot(normal);

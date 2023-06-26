@@ -1,11 +1,9 @@
 
 
 class Kinematic {
-  static final float GRAVITY = 0.1;
-  
-  PVector position = new PVector();
-  PVector velocity = new PVector();
-  PVector accelerate = new PVector();
+  PVector position = vec();
+  PVector velocity = vec();
+  PVector accelerate = vec();
   float mass = 1;
 
   Kinematic() { }
@@ -20,10 +18,9 @@ class Kinematic {
   }
 
   void update() {
-    float dt = 1/60;
-    velocity.add(PVector.mult(accelerate, dt));
-    velocity.y += Kinematic.GRAVITY*dt;
-    position.add(PVector.mult(velocity, dt));
+    velocity.add(PVector.mult(accelerate, DT));
+    velocity.y += GRAVITY*DT;
+    position.add(PVector.mult(velocity, DT));
   }
   
   Kinematic copy() {
