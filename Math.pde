@@ -3,6 +3,7 @@ void reflect(Particle p, Line l) {
   PVector pp = p.cur.position;
   PVector pv = p.cur.velocity;
   PVector prevPos = p.prev.position.copy();
+  PVector tang = PVector.sub(l.start, prevPos).normalize();
   float dist2 = PVector.sub(l.start, prevPos).dot(l.normal);
   float radius = dist2 > 0 ? -p.radius : p.radius;
   dist2 += radius;
@@ -10,12 +11,13 @@ void reflect(Particle p, Line l) {
   
   if (dist1 * dist2 >= 0) return;
   
-  float dot = PVector.dot(pv, l.normal);
+  float dot = PVector.dot(pv, tang);
   float t = dist2 / dot;
-  prevPos.add(PVector.mult(pv, t));
+  p.position.add(PVector.mult(pv, t));
+  p.display();
   
   p.velocity.sub(PVector.mult(l.normal, 2 * dot)).mult(0.7);
-  p.position.set(prevPos.add(PVector.mult(pv, 1-t)));
+  p.position.add(PVector.mult(pv, 1-t));
 }
 
 boolean reflect(Particle a, Particle b) {
@@ -102,10 +104,39 @@ void reflect2(Particle p, Line l) {
   float t = dist1 / (dist1 - dist2);
   float dot = PVector.dot(pp.velocity, normal);
   
-  //particle.position.add(PVector.mult(particle.velocity, -t));
+  p.position.add(PVector.mult(p.velocity, -t));
+  p.display();
   p.velocity.sub(normal.mult(2 * dot)).mult(0.9);
-  //particle.position.add(PVector.mult(particle.velocity, t));
+  p.position.add(PVector.mult(p.velocity, t));
 }
+
+float collisionTime(Particle p, Line l) {
+    PVector lineDirection = PVector.sub(l.end, l.start).normalize();
+    PVector particleToLineStart = PVector.sub(l.start, p.position);
+
+    // Calculate the perpendicular distance from the particle to the line
+    float perpendicularDistance = abs(PVector.dot(particleToLineStart, l.normal));
+
+    // Calculate the time of intersection with the line
+    float t = PVector.dot(lineDirection, particleToLineStart) / PVector.dot(p.velocity, lineDirection);
+
+    // Calculate the point of intersection
+    PVector intersectionPoint = PVector.mult(p.velocity, t).add(p.position);
+
+    // Check if the particle collides with the line within the line segment
+    float lineLength = PVector.dist(l.start, l.end);
+    float distanceAlongLine = PVector.dot(lineDirection, PVector.sub(intersectionPoint, l.start));
+
+    p.display();
+    p.position.add(PVector.mult(p.velocity, t));
+    p.display();
+    if (distanceAlongLine >= 0.0 && distanceAlongLine <= lineLength && perpendicularDistance <= p.radius) {
+        return t;
+    } else {
+        return -1.0; // No collision within the given constraints
+    }
+}
+
 
 boolean intersects(Particle p, Line l) {
   return distance(p.position, l) <= p.radius;
@@ -132,7 +163,7 @@ float distance(PVector pos, Line l) {
   return PVector.dist(pos, closest);
 }
 
-float collisionTime(Particle p, Line l) {
+float collisionTime2(Particle p, Line l) {
   float d = distance(p, l);
   PVector v = PVector.sub(l.end, l.start);
   PVector w = p.velocity.copy();

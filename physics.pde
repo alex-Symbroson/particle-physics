@@ -1,8 +1,9 @@
 
-final PVector R_RADIUS = vec(30, 80);   // radius random range
+final PVector R_RADIUS = vec(50, 80);   // radius random range
 final PVector R_SPEED = vec(400, 200); // horiz/vert random speed range
 final float GRAVITY = 200;
 final float COLL_LOSS = 0.99;
+final float SNAP_DIST = 100; // max distance for mouse line movement
 
 final int NUM_PARTICLES = 0;
 final int NUM_LINES = 1;
@@ -47,21 +48,27 @@ void setup() {
 }
 
 boolean intense = true, pause = false;
+boolean keyPress = false, keyDown = false, mouseDown = false;
 int save = 0, tPhys = 0, tDraw = 0, tFPS = 0, physFPS, drawFPS;
-boolean keyPress = false;
+PVector lp = null;
 void draw() {
-  frameRate(10);
-  if (keyPressed && !keyPress && key == 'd') clearFiles();
-  if (keyPressed && !keyPress && key == ' ') { pause = !pause; intense = false; }
-  keyPress = keyPressed;
+  keyDown = keyPressed && !keyPress;
+  mouseDown = mousePressed && !keyPress;
+  keyPress = keyPressed || mousePressed;
+
+  if (keyDown && key == 'd') clearFiles();
+  if (keyDown && key == ' ') { pause = !pause; intense = false; }
   //if (intense) pause = true;
-  if (pause && frameCount != 1) return;
-  frameRate(60);
+  if (pause && frameCount != 1) { frameRate = 10; return; }
+  frameRate = 60;
 
   background(T_BG);
   noFill();
   
-  snapLines();
+  if (mousePressed) {
+    if (mouseDown) lp = snapLine();
+    else if (lp != null) lp.set(mouseX, mouseY);
+  }
 
   // physics
   int time = millis();
@@ -84,11 +91,8 @@ void draw() {
     tPhys = 0;
   }
   text(physFPS, 0, height);
-  text(drawFPS, 20, height);
+  text(drawFPS, 50, height);
   
-  // reset
-  if (SIMULATE)
-    for (Particle p : particles) p.set(p.last);
   /* if (intense) {
     println("=== intense ===");
     for(Particle p : particles) println(p);
@@ -100,18 +104,17 @@ void draw() {
   if (save > 0) { saveFrame("physics-#####.png"); save--; }
 }
 
-void snapLines()
+PVector snapLine()
 {
-  PVector mouse = vec(mouseX, mouseY);
-  PVector lp = null;
-  float dist, minLpDist = 1e6;
+  PVector lp = null, mouse = vec(mouseX, mouseY);
+  float dist, minLpDist = 1e9;
   for (Line line : lines) {
     dist = PVector.dist(line.start, mouse);
-    if (mousePressed && dist < 50 && dist < minLpDist) lp = line.start;
+    if (dist < SNAP_DIST && dist < minLpDist) { lp = line.start; minLpDist = dist; }
     dist = PVector.dist(line.end, mouse);
-    if (mousePressed && dist < 50 && dist < minLpDist) lp = line.end;
+    if (dist < SNAP_DIST && dist < minLpDist) { lp = line.end; minLpDist = dist; }
   }
-  if (lp != null) lp.set(mouse);
+  return lp;
 }
 
 void handlePhysics() {
@@ -133,11 +136,13 @@ void handlePhysics() {
     
     // Check collision with lines
     for (Line line : lines) {
+      collisionTime(particle.cur, line);
+      /*
       if (intersects(particle.cur, line)) {
         particle.coll = 1;
-        reflect(particle, line);
+        reflect2(particle, line);
         particle.velocity.mult(COLL_LOSS);
-      }
+      }*/
     }
     
     // Check collision with screen edges

@@ -38,6 +38,8 @@ class Particle extends Kinematic {
     if (col) stroke(T_BLUE);
     ellipse(position.x, position.y, 2, 2);
     line(position.x, position.y, position.x + velocity.x/6, position.y + velocity.y/6);
+
+    if (!SIMULATE && last != null) set(last);
   }
   
   void update() { update(false); }
