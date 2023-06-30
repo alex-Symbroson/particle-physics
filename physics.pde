@@ -1,21 +1,24 @@
 
-final PVector R_RADIUS = vec(5, 10);
-final PVector R_SPEED = vec(400, 200);
-final float GRAVITY = 500;
-final float COLL_LOSS = 0.97;
+final PVector R_RADIUS = vec(30, 80);   // radius random range
+final PVector R_SPEED = vec(400, 200); // horiz/vert random speed range
+final float GRAVITY = 200;
+final float COLL_LOSS = 0.99;
 
-final int NUM_PARTICLES = 300;
-final int NUM_LINES = 0;
+final int NUM_PARTICLES = 0;
+final int NUM_LINES = 1;
+final int FPS_FRAMES = 10;
 
-final int PHYSICS_STEPS = 40;
+final int PHYSICS_STEPS = 10;
 final float FPS = 60;
-final float DT = 1/(FPS*PHYSICS_STEPS);
+final float DT = 1 / (FPS * PHYSICS_STEPS);
 
-final boolean SAVE = false;
-final boolean DEMO_PARTICLES = false;
-final boolean DBG_COLL = false;
-final boolean DBG_PARTICLES = false;
-final boolean SIMULATE = true;
+final boolean SAVE = false;           // save every FPS_FRAMES'th frame as image
+final boolean SIMULATE = !true;        // physics not applied, mouse steered particle
+final boolean DEMO_PARTICLES = false; // load defined list of particles
+
+final boolean DBG_COLL = !false;      // red collision particles
+final boolean DBG_VEL = !false;        // velocity direction indicator
+final boolean DBG_INTENSE = false;    // debug collisions with large dt
 
 ArrayList<Particle> particles;
 ArrayList<Line> lines;
@@ -26,13 +29,7 @@ PVector vec(float x, float y) { return new PVector(x, y); }
 PVector vec(float x, float y, float z) { return new PVector(x, y, z); }
 
 void debugParticles() {
-  Particle ps[] = {
-  new Particle(61.215, vec(674.525, 90.261), vec(1.184, -0.805)),
-  new Particle(86.673, vec(532.559, 86.673), vec(1.325, 2.882)),
-  new Particle(79.488, vec(320.926, 405.500), vec(3.455, -5.153)),
-  new Particle(92.203, vec(330.903, 204.208), vec(3.058, 7.769)),
-  new Particle(93.715, vec(613.494, 409.320), vec(0.988, -4.904)),
-  };
+  Particle ps[] = {};
   for(Particle p : ps) particles.add(p);
 }
 
@@ -49,24 +46,49 @@ void setup() {
   for (int i = 0; i < NUM_LINES; i++) createRandomLine();
 }
 
-boolean intense = true;
-int save = 0;
+boolean intense = true, pause = false;
+int save = 0, tPhys = 0, tDraw = 0, tFPS = 0, physFPS, drawFPS;
+boolean keyPress = false;
 void draw() {
-  if (frameCount != 1) frameRate(10);
-  if (keyPressed && key == 'd') clearFiles();
-  if (keyPressed && key == ' ') intense = false;
-  //if ((intense || keyPressed) && frameCount != 1) return;
+  frameRate(10);
+  if (keyPressed && !keyPress && key == 'd') clearFiles();
+  if (keyPressed && !keyPress && key == ' ') { pause = !pause; intense = false; }
+  keyPress = keyPressed;
+  //if (intense) pause = true;
+  if (pause && frameCount != 1) return;
   frameRate(60);
 
   background(T_BG);
   noFill();
   
+  snapLines();
+
+  // physics
+  int time = millis();
+  for (Particle p : particles) p.last = p.copyRef(p.last);
   for (int q = 0; q < PHYSICS_STEPS; q++)
     handlePhysics();
+  tPhys += millis() - time;
   
+  // draw
+  time = millis();
   for (Particle particle : particles) particle.display();
   for (Line line : lines) line.display();
+  tDraw += millis() - time;
   
+  // fps
+  if (++tFPS > FPS_FRAMES) {
+    if (tPhys != 0) physFPS = tFPS*1000 / tPhys;
+    if (tDraw != 0) drawFPS = tFPS*1000 / tDraw;
+    tFPS = 0;
+    tPhys = 0;
+  }
+  text(physFPS, 0, height);
+  text(drawFPS, 20, height);
+  
+  // reset
+  if (SIMULATE)
+    for (Particle p : particles) p.set(p.last);
   /* if (intense) {
     println("=== intense ===");
     for(Particle p : particles) println(p);
@@ -76,6 +98,20 @@ void draw() {
   if (frameCount % 5 == 0) save++;
   if (intense) save += 5;
   if (save > 0) { saveFrame("physics-#####.png"); save--; }
+}
+
+void snapLines()
+{
+  PVector mouse = vec(mouseX, mouseY);
+  PVector lp = null;
+  float dist, minLpDist = 1e6;
+  for (Line line : lines) {
+    dist = PVector.dist(line.start, mouse);
+    if (mousePressed && dist < 50 && dist < minLpDist) lp = line.start;
+    dist = PVector.dist(line.end, mouse);
+    if (mousePressed && dist < 50 && dist < minLpDist) lp = line.end;
+  }
+  if (lp != null) lp.set(mouse);
 }
 
 void handlePhysics() {
@@ -98,7 +134,9 @@ void handlePhysics() {
     // Check collision with lines
     for (Line line : lines) {
       if (intersects(particle.cur, line)) {
+        particle.coll = 1;
         reflect(particle, line);
+        particle.velocity.mult(COLL_LOSS);
       }
     }
     

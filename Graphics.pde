@@ -3,7 +3,7 @@ final color T_BG = color(DARK ? 45 : 255);
 final color T_STROKE = color(DARK ? 210 : 0);
 final color T_RED = DARK ? color(255,50,50) : color(255,0,0);
 final color T_GREEN = DARK ? color(250,0,0) : color(100,200,100);
-final color T_BLUE = DARK ? color(100,50,255) : color(100,100,200);
+final color T_BLUE = DARK ? color(100,200,255) : color(100,100,200);
 final color T_LGREY = DARK ? color(100) : color(200);
 final color T_GREY = DARK ? color(200) : color(100);
 
@@ -20,18 +20,19 @@ class Particle extends Kinematic {
     this.radius = radius;
   }
   
-  Particle prev, cur;
+  Particle prev, cur, last;
 
   void display() { display(true); }
   void display(boolean col) {
-    if(col)
+    if (col)
     {
-      if (coll-- > 0 && DBG_PARTICLES) stroke(T_RED);
+      if (coll > 0 && DBG_COLL) stroke(T_RED);
       else stroke(T_STROKE);
+      if (coll > 0) coll--;
     }
     ellipse(position.x, position.y, radius * 2, radius * 2);
     
-    if (!DBG_PARTICLES) return;
+    if (!DBG_VEL) return;
     //stroke(200, 200, 255);
     //ellipse(a.prev.position.x, a.prev.position.y, 2*a.radius, 2*a.radius);
     if (col) stroke(T_BLUE);
@@ -84,7 +85,6 @@ class MouseParticle extends Particle {
   @Override
   void update(boolean intense)
   {
-    println("hello");
     position.set(mouseX, mouseY);
     prev = copyRef(prev);
     cur = copyRef(cur);

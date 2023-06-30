@@ -19,7 +19,7 @@ class Kinematic {
 
   void update() {
     velocity.add(PVector.mult(accelerate, DT));
-    velocity.y += GRAVITY*DT;
+    velocity.y += GRAVITY * DT;
     position.add(PVector.mult(velocity, DT));
   }
   

@@ -1,21 +1,21 @@
 
 void reflect(Particle p, Line l) {
-  Particle pp = p.cur;
+  PVector pp = p.cur.position;
+  PVector pv = p.cur.velocity;
   PVector prevPos = p.prev.position.copy();
-  float dist2 = l.start.copy().sub(prevPos).dot(l.normal);
-  if (dist2 > 0) pp.radius = -pp.radius;
-  dist2 += pp.radius;
-  float dist1 = l.start.copy().sub(pp.position).dot(l.normal) + pp.radius;
+  float dist2 = PVector.sub(l.start, prevPos).dot(l.normal);
+  float radius = dist2 > 0 ? -p.radius : p.radius;
+  dist2 += radius;
+  float dist1 = PVector.sub(l.start, pp).dot(l.normal) + radius;
   
   if (dist1 * dist2 >= 0) return;
-  p.coll = 20;
   
-  float dot = pp.velocity.copy().dot(l.normal);
+  float dot = PVector.dot(pv, l.normal);
   float t = dist2 / dot;
-  prevPos.add(pp.velocity.copy().mult(t));
+  prevPos.add(PVector.mult(pv, t));
   
-  p.velocity.sub(l.normal.copy().mult(2 * dot)).mult(0.7);
-  p.position.set(prevPos.add(pp.velocity.copy().mult(1-t)));
+  p.velocity.sub(PVector.mult(l.normal, 2 * dot)).mult(0.7);
+  p.position.set(prevPos.add(PVector.mult(pv, 1-t)));
 }
 
 boolean reflect(Particle a, Particle b) {
@@ -30,7 +30,7 @@ boolean reflect(Particle a, Particle b) {
   {
     intense = true;
     
-    if (DBG_COLL) {
+    if (DBG_INTENSE) {
       Particle virt = a.copy();
       virt.position.add(PVector.mult(a.velocity, t));
       stroke(T_GREEN);
@@ -60,7 +60,7 @@ boolean reflect(Particle a, Particle b) {
   float v_new = (2*vb_n*b.mass + va_n*(a.mass - b.mass)) / (a.mass + b.mass);
   if (SIMULATE && !intense) a.velocity = PVector.mult(tang, va_t).add(PVector.mult(normal, v_new));
   if (SIMULATE && !intense) a.position.add(PVector.mult(a.velocity, -t));
-  if (intense && DBG_COLL)
+  if (intense && DBG_INTENSE)
   {
     stroke(T_GREY);
     a.prev.display(false);
@@ -98,7 +98,6 @@ void reflect2(Particle p, Line l) {
   float dist1 = PVector.sub(pp.position, l.start).dot(normal);
   float dist2 = PVector.sub(prev, l.start).dot(normal);
   if (dist1 * dist2 > 0) return;
-  p.coll = 20;
   
   float t = dist1 / (dist1 - dist2);
   float dot = PVector.dot(pp.velocity, normal);
@@ -130,9 +129,19 @@ float distance(PVector pos, Line l) {
   t = constrain(t, 0, 1);
   
   PVector closest = PVector.add(l.start, PVector.mult(v, t));
-  float d = PVector.dist(pos, closest);
+  return PVector.dist(pos, closest);
+}
+
+float collisionTime(Particle p, Line l) {
+  float d = distance(p, l);
+  PVector v = PVector.sub(l.end, l.start);
+  PVector w = p.velocity.copy();
   
-  return d;
+  float t = d / v.dot(w);
+  t = constrain(t, 0, 1);
+  
+  PVector closest = PVector.add(l.start, PVector.mult(v, t));
+  return PVector.dist(p.position, closest);
 }
 
 float distance(Particle p, Line l) {
