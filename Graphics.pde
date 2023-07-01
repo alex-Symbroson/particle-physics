@@ -2,7 +2,7 @@ final boolean DARK = true;
 final color T_BG = color(DARK ? 45 : 255);
 final color T_STROKE = color(DARK ? 210 : 0);
 final color T_RED = DARK ? color(255,50,50) : color(255,0,0);
-final color T_GREEN = DARK ? color(250,0,0) : color(100,200,100);
+final color T_GREEN = DARK ? color(0,250,0) : color(100,200,100);
 final color T_BLUE = DARK ? color(100,200,255) : color(100,100,200);
 final color T_LGREY = DARK ? color(100) : color(200);
 final color T_GREY = DARK ? color(200) : color(100);
@@ -74,7 +74,7 @@ class Particle extends Kinematic {
   @Override
   public String toString() {
       return String.format("Particle(%.3f, (%.3f, %.3f), (%.3f, %.3f))", 
-        radius, prev.position.x, prev.position.y, prev.velocity.x, prev.velocity.y);
+        radius, position.x, position.y, velocity.x, velocity.y);
   }
 }
 
@@ -98,18 +98,18 @@ class MouseParticle extends Particle {
 
 class Line {
   PVector start, end;
-  PVector diff, normal;
 
   Line(float x1, float y1, float x2, float y2) {
     start = vec(x1, y1);
     end = vec(x2, y2);
-    
-    diff = PVector.sub(end, start);
-    normal = vec(diff.y, -diff.x).normalize();
   }
 
   void display() {
     stroke(T_STROKE);
     line(start.x, start.y, end.x, end.y);
   }
+
+  PVector diff() { return PVector.sub(end, start); }
+  PVector dir() { return diff().normalize(); }
+  PVector normal() { return vec(end.y - start.y, start.x - end.x).normalize(); }
 }

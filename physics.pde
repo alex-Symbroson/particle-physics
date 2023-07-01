@@ -1,25 +1,25 @@
 
-final PVector R_RADIUS = vec(50, 80);   // radius random range
+final PVector R_RADIUS = vec(5, 20);   // radius random range
 final PVector R_SPEED = vec(400, 200); // horiz/vert random speed range
 final float GRAVITY = 200;
-final float COLL_LOSS = 0.99;
+final float COLL_LOSS = 0.95;
 final float SNAP_DIST = 100; // max distance for mouse line movement
 
-final int NUM_PARTICLES = 0;
-final int NUM_LINES = 1;
+final int NUM_PARTICLES = 300;
+final int NUM_LINES = 0;
 final int FPS_FRAMES = 10;
 
-final int PHYSICS_STEPS = 10;
 final float FPS = 60;
-final float DT = 1 / (FPS * PHYSICS_STEPS);
+int PHYSICS_STEPS = 10;
+float DT = 1 / (FPS * PHYSICS_STEPS);
 
-final boolean SAVE = false;           // save every FPS_FRAMES'th frame as image
-final boolean SIMULATE = !true;        // physics not applied, mouse steered particle
+boolean SAVE = false;           // save every FPS_FRAMES'th frame as image
+boolean SIMULATE = true;        // physics not applied, mouse steered particle
 final boolean DEMO_PARTICLES = false; // load defined list of particles
 
-final boolean DBG_COLL = !false;      // red collision particles
-final boolean DBG_VEL = !false;        // velocity direction indicator
-final boolean DBG_INTENSE = false;    // debug collisions with large dt
+boolean DBG_COLL = !false;      // red collision particles
+boolean DBG_VEL = !false;        // velocity direction indicator
+boolean DBG_INTENSE = false;    // debug collisions with large dt
 
 ArrayList<Particle> particles;
 ArrayList<Line> lines;
@@ -51,13 +51,28 @@ boolean intense = true, pause = false;
 boolean keyPress = false, keyDown = false, mouseDown = false;
 int save = 0, tPhys = 0, tDraw = 0, tFPS = 0, physFPS, drawFPS;
 PVector lp = null;
-void draw() {
+
+void keyHandler()
+{
   keyDown = keyPressed && !keyPress;
   mouseDown = mousePressed && !keyPress;
   keyPress = keyPressed || mousePressed;
 
   if (keyDown && key == 'd') clearFiles();
   if (keyDown && key == ' ') { pause = !pause; intense = false; }
+  if (keyDown && key == 'c') { DBG_COLL = !DBG_COLL; }
+  if (keyDown && key == 'v') { DBG_VEL = !DBG_VEL; }
+  if (keyDown && key == 'r') { SAVE = !SAVE; }
+  if (keyDown && key == 'i') { DBG_INTENSE = !DBG_INTENSE; }
+  if (keyDown && key == 'l') { SIMULATE = !SIMULATE; }
+  if (keyDown && key == '+') { PHYSICS_STEPS++; }
+  if (keyDown && key == '-') { if (PHYSICS_STEPS > 1) PHYSICS_STEPS--; }
+  if (keyDown && key == 'p') { for (Particle p : particles) println(p); println("----"); }
+  DT = 1 / (FPS * PHYSICS_STEPS);
+}
+
+void draw() {
+  keyHandler();
   //if (intense) pause = true;
   if (pause && frameCount != 1) { frameRate = 10; return; }
   frameRate = 60;
@@ -73,7 +88,7 @@ void draw() {
   // physics
   int time = millis();
   for (Particle p : particles) p.last = p.copyRef(p.last);
-  for (int q = 0; q < PHYSICS_STEPS; q++)
+  for (int q = 0; q < (SIMULATE ? PHYSICS_STEPS : 1); q++)
     handlePhysics();
   tPhys += millis() - time;
   
@@ -120,6 +135,19 @@ PVector snapLine()
 void handlePhysics() {
   for (Particle particle : particles) particle.update(intense && false);
 
+  for (Particle particle : particles)
+  {
+    // Check collision with lines
+    for (Line line : lines) {
+      //collisionTime(particle.cur, line);
+      if (intersects(particle.cur, line)) {
+        particle.coll = 1;
+        reflect(particle, line);
+        particle.velocity.mult(COLL_LOSS);
+      }
+    }
+  }
+
   // Update and display particles
   for (Particle particle : particles)
   {
@@ -133,18 +161,10 @@ void handlePhysics() {
         particle.velocity.mult(COLL_LOSS);
       }
     }
-    
-    // Check collision with lines
-    for (Line line : lines) {
-      collisionTime(particle.cur, line);
-      /*
-      if (intersects(particle.cur, line)) {
-        particle.coll = 1;
-        reflect2(particle, line);
-        particle.velocity.mult(COLL_LOSS);
-      }*/
-    }
-    
+  }
+        
+  for (Particle particle : particles)
+  {
     // Check collision with screen edges
     if (particle.position.x < particle.radius) {
       particle.velocity.x = abs(particle.velocity.x);
