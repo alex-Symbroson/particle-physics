@@ -8,17 +8,19 @@ final float SNAP_DIST = 40;   // max distance for mouse line movement
 final int NUM_PARTICLES = 400;
 final int NUM_LINES = 6;
 final int FPS_FRAMES = 10;
+final int FONTSIZE = 15;
 
 final float FPS = 60;
 int PHYSICS_STEPS = 10;
 float DT = 1 / (FPS * PHYSICS_STEPS);
 
+boolean HELP = true;           // display help
 boolean SAVE = false;           // save every FPS_FRAMES'th frame as image
 boolean SIMULATE = true;        // physics not applied, mouse steered particle
 final boolean DEMO_PARTICLES = false; // load defined list of particles
 
-boolean DBG_COLL = !false;      // red collision particles
-boolean DBG_VEL = !false;        // velocity direction indicator
+boolean DBG_COLL = false;      // red collision particles
+boolean DBG_VEL = false;        // velocity direction indicator
 boolean DBG_INTENSE = false;    // debug collisions with large dt
 
 ArrayList<Particle> particles, forceFields;
@@ -37,7 +39,7 @@ void debugParticles() {
 void setup() {
   clearFiles();
   size(800, 600);
-  textFont(createFont("Monospaced.bold", 15));
+  textFont(createFont("Monospaced.bold", FONTSIZE));
 
   particles = new ArrayList<Particle>();
   forceFields = new ArrayList<Particle>();
@@ -72,12 +74,24 @@ void keyHandler()
   if (keyDown && key == 'v') { DBG_VEL = !DBG_VEL; }
   if (keyDown && key == 'r') { SAVE = !SAVE; }
   if (keyDown && key == 'i') { DBG_INTENSE = !DBG_INTENSE; }
+  if (keyDown && key == 'h') { HELP = !HELP; }
   if (keyDown && key == 'l') { SIMULATE = !SIMULATE; }
   if (keyDown && key == 'f') { fp.simulate = false; fp = null; }
   if (keyDown && key == '+') { PHYSICS_STEPS++; }
   if (keyDown && key == '-') { if (PHYSICS_STEPS > 1) PHYSICS_STEPS--; }
   if (keyDown && key == 'p') { for (Particle p : particles) println(p); println("----"); }
   DT = 1 / (FPS * PHYSICS_STEPS);
+}
+
+void printHelp()
+{
+  fill(T_BG);
+  stroke(T_STROKE);
+  rect(width-250, -1, width, 300-FONTSIZE);
+  fill(T_STROKE);
+  String[] helpStr = loadStrings("help.txt");
+  for (int i = 0; i < helpStr.length; )
+    text(helpStr[i], width - 240, ++i * FONTSIZE);
 }
 
 void snapHandler()
@@ -135,9 +149,10 @@ void draw() {
     tPhys = 0;
   }
   fill(T_STROKE);
-  text("phys FPS: " + physFPS, 0, 15);
-  text("draw FPS: " + drawFPS, 0, 30);
-  text("Ph steps: " + PHYSICS_STEPS, 0, 45);
+  text("phys FPS: " + physFPS, 0, 1*FONTSIZE);
+  text("draw FPS: " + drawFPS, 0, 2*FONTSIZE);
+  text("Ph steps: " + PHYSICS_STEPS, 0, 3*FONTSIZE);
+  if (HELP) printHelp();
   
   /* if (intense) {
     println("=== intense ===");
@@ -194,8 +209,7 @@ void handlePhysics()
     // Check collision with lines
     for (Line line : lines) {
       //collisionTime(particle.cur, line);
-      if (intersects(particle.cur, line))
-      {
+      if (intersects(particle.cur, line)) {
         particle.coll = 1;
         reflect(particle, line);
         particle.velocity.mult(COLL_LOSS);

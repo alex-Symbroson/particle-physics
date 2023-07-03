@@ -1,0 +1,18 @@
+========== HELP ==========
+[H] Help
+[_] Pause
+[C] Collisions
+[V] Velocities
+[+] Inc Physics Steps
+[-] Dec Physics Steps
+[L] Simulate
+[P] Print positions
+[R] Record Frames
+[D] Delete Frames
+
+Force Fields:
+[F] Drop
+[LEFT] De/Spawn (hold)
+[SCROLL] Radius
+[CONTROL] Direction (hold)
+========== HELP ==========
