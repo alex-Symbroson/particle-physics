@@ -1,25 +1,27 @@
 
-final PVector R_RADIUS = vec(2, 10);   // radius random range
+final PVector R_RADIUS = vec(1, 7);    // radius random range
 final PVector R_SPEED = vec(400, 200); // horiz/vert random speed range
 final float GRAVITY = 200;
 final float COLL_LOSS = 0.95;
-final float SNAP_DIST = 40;   // max distance for mouse line movement
+final float SNAP_DIST = 40;            // max distance for mouse line movement
 
-final int NUM_PARTICLES = 400;
+final int NUM_PARTICLES = 1000;
 final int NUM_LINES = 6;
 final int FPS_FRAMES = 10;
 final int FONTSIZE = 15;
+
+final int GRID = 30;
 
 final float FPS = 60;
 int PHYSICS_STEPS = 10;
 float DT = 1 / (FPS * PHYSICS_STEPS);
 
-boolean HELP = true;           // display help
+boolean HELP = true;            // display help
 boolean SAVE = false;           // save every FPS_FRAMES'th frame as image
 boolean SIMULATE = true;        // physics not applied, mouse steered particle
 final boolean DEMO_PARTICLES = false; // load defined list of particles
 
-boolean DBG_COLL = false;      // red collision particles
+boolean DBG_COLL = false;       // red collision particles
 boolean DBG_VEL = false;        // velocity direction indicator
 boolean DBG_INTENSE = false;    // debug collisions with large dt
 
@@ -33,7 +35,7 @@ PVector vec(float x, float y, float z) { return new PVector(x, y, z); }
 
 void debugParticles() {
   Particle ps[] = {};
-  for(Particle p : ps) particles.add(p);
+  for (Particle p : ps) particles.add(p);
 }
 
 void setup() {
@@ -128,7 +130,12 @@ void draw() {
 
   // physics
   int time = millis();
-  for (Particle p : particles) p.last = p.copyRef(p.last);
+  spatialHashMap = new HashMap<>();
+  for (Particle p : particles) {
+    p.last = p.copyRef(p.last);
+    spatialHashMap.putIfAbsent(spatialHash(p), new ArrayList());
+    spatialHashMap.get(spatialHash(p)).add(p);
+  }
   for (int q = 0; q < (SIMULATE ? PHYSICS_STEPS : 1); q++)
     handlePhysics();
   tPhys += millis() - time;
@@ -142,16 +149,16 @@ void draw() {
   tDraw += millis() - time;
   
   // fps
-  if (++tFPS > FPS_FRAMES) {
-    if (tPhys != 0) physFPS = tFPS*1000 / tPhys;
-    if (tDraw != 0) drawFPS = tFPS*1000 / tDraw;
-    tFPS = 0;
-    tPhys = 0;
+  if (++tFPS == FPS_FRAMES) {
+    if (tPhys != 0) physFPS = FPS_FRAMES*1000 / tPhys;
+    if (tDraw != 0) drawFPS = FPS_FRAMES*1000 / tDraw;
+    tFPS = tPhys = tDraw = 0; // ?
   }
   fill(T_STROKE);
-  text("phys FPS: " + physFPS, 0, 1*FONTSIZE);
-  text("draw FPS: " + drawFPS, 0, 2*FONTSIZE);
-  text("Ph steps: " + PHYSICS_STEPS, 0, 3*FONTSIZE);
+  text("particles: " + particles.size(), 0, 1*FONTSIZE);
+  text("phys FPS: " + physFPS, 0, 2*FONTSIZE);
+  text("draw FPS: " + drawFPS, 0, 3*FONTSIZE);
+  text("Ph steps: " + PHYSICS_STEPS, 0, 4*FONTSIZE);
   if (HELP) printHelp();
   
   /* if (intense) {
@@ -195,6 +202,21 @@ void applyForce(Particle p, Particle field)
   p.accel(field.accelerate);
 }
 
+HashMap<Integer, ArrayList<Particle>> spatialHashMap;
+void spatialCollision(Particle p, int dx, int dy)
+{
+  ArrayList<Particle> others = spatialHashMap.get(spatialHash(p) + GRID*dy + dx);
+  if (others == null) return;
+  // Check collision with other particles
+  for (Particle other : others) {
+    if (p != other && intersects(p.cur, other.cur)) {
+      p.coll = 1;
+      intense = reflect(p, other) || intense;
+      p.velocity.mult(COLL_LOSS);
+    }
+  }
+}
+
 void handlePhysics()
 {
   for (Particle field : forceFields) field.update();
@@ -202,6 +224,7 @@ void handlePhysics()
     for (Particle field : forceFields)
       if (intersects(particle, field))
         applyForce(particle, field);
+
     particle.update(intense && false);
   }
 
@@ -219,14 +242,9 @@ void handlePhysics()
 
   // Update and display particles
   for (Particle particle : particles) {
-    // Check collision with other particles
-    for (Particle other : particles) {
-      if (particle != other && intersects(particle.cur, other.cur)) {
-        particle.coll = 1;
-        intense = reflect(particle, other) || intense;
-        particle.velocity.mult(COLL_LOSS);
-      }
-    }
+    for(int y = -1; y <= 1; y++)
+      for(int x = -1; x <= 1; x++)
+        spatialCollision(particle, x, y);
   }
 
   for (Particle particle : particles) {

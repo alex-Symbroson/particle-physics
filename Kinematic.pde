@@ -47,3 +47,15 @@ class Kinematic {
     return this;
   }
 }
+
+int spatialHash(Particle p)
+{
+  return spatialHashCoords(p.position.x, p.position.y);
+}
+
+int spatialHashCoords(float x, float y)
+{
+  int cellX = (int)(GRID * x / width);
+  int cellY = (int)(GRID * y / height);
+  return GRID * cellY + cellX;
+}
