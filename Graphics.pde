@@ -9,7 +9,6 @@ final color T_GREY = DARK ? color(200) : color(100);
 
 class Particle extends Kinematic {
   float radius;
-  int coll = 1;
   
   Particle() { this(50); }
   Particle(float radius) { this(radius, null); }
@@ -39,7 +38,7 @@ class Particle extends Kinematic {
     ellipse(position.x, position.y, 2, 2);
     line(position.x, position.y, position.x + velocity.x/6, position.y + velocity.y/6);
 
-    if (!SIMULATE && last != null) set(last);
+    if (!SIMULATE && last != null && col) set(last);
   }
   
   void update() { update(false); }
@@ -90,9 +89,11 @@ class MouseParticle extends Particle {
     position.set(mouseX, mouseY);
     prev = copyRef(prev);
     cur = copyRef(cur);
+    last = copyRef(last);
 
-    prev.position.sub(velocity);
-    prev.velocity.sub(accelerate);
+    prev.position.sub(PVector.mult(velocity, PHYSICS_STEPS * DT));
+    prev.velocity.sub(PVector.mult(accelerate, PHYSICS_STEPS * DT));
+    last.set(prev);
   }
 }
 

@@ -3,9 +3,9 @@ void checkNan(Particle p, String s)
 {
   // boolean wasNan = Float.isNaN(particle.position.x)||Float.isNaN(particle.position.y);
   if (
-    Float.isInfinite(p.position.x) || Float.isInfinite(p.position.y))||
+    Float.isInfinite(p.position.x) || Float.isInfinite(p.position.y) ||
     !Float.isFinite(p.position.x) || !Float.isFinite(p.position.y)||
-    Float.isNaN(p.position.x) || Float.isNaN(p.position.y)
+    Float.isNaN(p.position.x) || Float.isNaN(p.position.y))
   {
     println("NAN "+p+" "+s);
     p.position.set(p.radius, p.radius);
@@ -17,34 +17,30 @@ boolean reflect(Particle p, Line l) {
   boolean intense = false;
   PVector pp = p.cur.position;
   PVector pv = p.cur.velocity;
-  stroke(255, 150, 255);
-  p.display(false);
+  stroke(0, 150, 255);
+  p.cur.display(false);
 
   float t = collisionTime(p.cur, l);
-  p.display(false);
-  if (t != 0) return true;
 
   if (t == 0) return false;
   if (t < -4*DT) intense = true;
 
   float dot = PVector.dot(pv, l.normal());
+  float side = PVector.dot(PVector.sub(p.cur.position, l.start), l.normal());
 
   if (intense)
   {
     float d = distance(pp, l);
     stroke(T_RED);
-    p.cur.display(false);
-    p.display(false);
+    stroke(0, 255, 255);
     p.velocity.sub(PVector.mult(l.normal(), 2 * dot));
-    p.position.add(PVector.mult(l.normal(), dot < 0 ? d : -d));
-    stroke(T_GREEN);
-    p.display(false);
+    p.position.sub(PVector.mult(l.normal(), Math.signum(side) * (d - p.radius)));
     return true;
   }
 
   p.position.add(PVector.mult(pv, t));
   p.velocity.sub(PVector.mult(l.normal(), 2 * dot));
-  p.position.add(PVector.mult(pv, -t));
+  p.position.add(PVector.mult(p.velocity, -t));
   return false;
 }
 
@@ -142,17 +138,17 @@ boolean intersects(Particle a, Particle b) {
   return PVector.dist(a.position, b.position) <= a.radius + b.radius;
 }
 
-// Distance from a point to a line segment
+// Distance from a point to a line segment //<>//
 float distance(Particle p, PVector pos) {
   return PVector.dist(p.position, pos) - p.radius;
 }
- //<>//
+
 // Distance from a point to a line segment
 float distance(PVector pos, Line l) {
   PVector v = PVector.sub(l.end, l.start);
   PVector w = PVector.sub(pos, l.start);
 
-  float t = w.dot(v) / v.dot(v);
+  float t = PVector.dot(w, v) / PVector.dot(v, v);
   t = constrain(t, 0, 1);
 
   PVector closest = PVector.add(l.start, PVector.mult(v, t));
@@ -160,5 +156,5 @@ float distance(PVector pos, Line l) {
 }
 
 float distance(Particle p, Line l) {
-  return distance(p.position, l) - p.radius; //<>//
+  return distance(p.position, l) - p.radius;
 }

@@ -5,6 +5,7 @@ class Kinematic {
   PVector velocity = vec();
   PVector accelerate = vec();
   float mass = 1;
+  int coll = 0;
 
   Kinematic() { }
   Kinematic(float mass) { this(mass, null); }
@@ -22,7 +23,7 @@ class Kinematic {
     velocity.y += GRAVITY * DT;
     position.add(PVector.mult(velocity, DT));
   }
-  
+
   Kinematic copy() {
     return new Kinematic(mass, position, velocity, accelerate);
   }
