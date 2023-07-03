@@ -44,13 +44,9 @@ class Particle extends Kinematic {
   void update() { update(false); }
   void update(boolean intense)
   {
+    if (!simulate) return;
     prev = copyRef(prev);
-    if (SIMULATE) {
-      if (!intense) super.update();
-    } else {
-      prev.position.sub(velocity);
-      prev.velocity.sub(accelerate);
-    }
+    if (SIMULATE && !intense) super.update();
     cur = copyRef(cur);
   }
   
@@ -86,11 +82,18 @@ class MouseParticle extends Particle {
   @Override
   void update(boolean intense)
   {
-    position.set(mouseX, mouseY);
+    if (!simulate) return;
+    boolean ctrlVel = keyPressed && keyCode == CONTROL;
+    if (ctrlVel) {
+      velocity.set(mouseX - position.x, mouseY - position.y);
+    }
+    else position.set(mouseX, mouseY);
+    
     prev = copyRef(prev);
     cur = copyRef(cur);
     last = copyRef(last);
 
+    if (ctrlVel) return;
     prev.position.sub(PVector.mult(velocity, PHYSICS_STEPS * DT));
     prev.velocity.sub(PVector.mult(accelerate, PHYSICS_STEPS * DT));
     last.set(prev);

@@ -4,6 +4,7 @@ class Kinematic {
   PVector position = vec();
   PVector velocity = vec();
   PVector accelerate = vec();
+  boolean simulate = true;
   float mass = 1;
   int coll = 0;
 
@@ -19,11 +20,16 @@ class Kinematic {
   }
 
   void update() {
+    if (!simulate) return;
     velocity.add(PVector.mult(accelerate, DT));
     velocity.y += GRAVITY * DT;
     position.add(PVector.mult(velocity, DT));
   }
 
+  void accel(PVector a) {
+    velocity.add(PVector.mult(a, DT));
+  }
+  
   Kinematic copy() {
     return new Kinematic(mass, position, velocity, accelerate);
   }
